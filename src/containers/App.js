@@ -8,11 +8,6 @@ import Rank from "../components/Rank/Rank";
 import ImageLinkForm from "../components/ImageLinkForm/ImageLinkForm";
 import FaceRecognition from "../components/FaceRecognition/FaceRecognition";
 import Particles from 'react-particles-js';
-import Clarifai from 'clarifai';
-
-const app = new Clarifai.App({
-    apiKey: '1d12be889655455fabd9c12f42ff3e3a'
-});
 
 const particlesOptions = {
     particles: {
@@ -26,15 +21,35 @@ const particlesOptions = {
     }
 };
 
+const initialState = {
+    input: '',
+    imageUrl: '',
+    box: {},
+    route: 'signIn',
+    user: {
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: new Date()
+    }
+};
+
 class App extends React.Component {
     constructor() {
         super();
-        this.state = {
-            input: '',
-            imageUrl: '',
-            box: {},
-            route: 'signIn'
-        }
+        this.state = initialState;
+    };
+
+    loadUser = data => {
+        this.setState({ user: {
+                id: data.id,
+                name: data.name,
+                email: data.email,
+                entries: data.entries,
+                joined: data.joined
+            }
+        });
     };
 
     calculateFaceLocation = data => {
@@ -42,13 +57,18 @@ class App extends React.Component {
         const image = document.getElementById('inputImage');
         const width = Number(image.width);
         const height = Number(image.height);
+        return(
+                {
+                    top: faceBoundaries.top_row * height,
+                    right: width - (faceBoundaries.right_col * width),
+                    bottom: height - (faceBoundaries.bottom_row * height),
+                    left: faceBoundaries.left_col * width,
+                }
+            );
+    };
 
-        this.setState({ box: {
-                top: faceBoundaries.top_row * height,
-                right: width - (faceBoundaries.right_col * width),
-                bottom: height - (faceBoundaries.bottom_row * height),
-                left: faceBoundaries.left_col * height,
-            } });
+    displayFaceBox = box => {
+        this.setState({ box: box })
     };
 
     onInputChange = event => {
@@ -56,14 +76,37 @@ class App extends React.Component {
     };
 
     onButtonSubmit = () => {
-        this.setState({ imageUrl: this.state.input }, () => {
-            app.models.predict("a403429f2ddf4b49b307e318f00e528b", this.state.imageUrl)
-                .then(response => this.calculateFaceLocation(response))
-                .catch(error => console.log(error));
+            this.setState({ imageUrl: this.state.input }, () => {
+                fetch('https://salty-fjord-75462.herokuapp.com/imageurl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: this.state.imageUrl })
+                })
+                    .then(response => response.json())
+                    .then(response => {
+                        if (response) {
+                            fetch('https://salty-fjord-75462.herokuapp.com/image', {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: this.state.user.id })
+                            })
+                                .then(response => response.json())
+                                .then(count => this.setState(Object.assign(this.state.user,
+                                    {entries: count})))
+                                .catch(err => console.log(err))
+                        }
+                        this.displayFaceBox(this.calculateFaceLocation(response));
+                    })
+                    .catch(error => console.log(error));
         });
     };
 
-    onRouteChange = (route) => {
+    onSignOut = () => {
+        this.setState(initialState);
+        this.onRouteChange('signIn');
+    };
+
+    onRouteChange = route => {
         this.setState({ route: route });
     };
 
@@ -74,13 +117,13 @@ class App extends React.Component {
                     className='particles'
                     params={ particlesOptions }
                 />
-                <Navigation onRouteChange = { this.onRouteChange } routeState = { this.state.route }>
+                <Navigation onRouteChange ={ this.onRouteChange } routeState={ this.state.route } onSignOut={this.onSignOut}>
                     <Logo />
                 </Navigation>
                 {
                     this.state.route === 'home' ?
                         <div>
-                            <Rank />
+                            <Rank name={ this.state.user.name } entries={ this.state.user.entries } />
                             <ImageLinkForm
                                 onInputChange={ this.onInputChange }
                                 onButtonSubmit={ this.onButtonSubmit }
@@ -91,8 +134,8 @@ class App extends React.Component {
                             />
                         </div>
                         : ( this.state.route === 'signIn'
-                            ? <SignIn onRouteChange= { this.onRouteChange } />
-                            : <SignUp onRouteChange= { this.onRouteChange } />
+                            ? <SignIn onRouteChange={ this.onRouteChange } loadUser={ this.loadUser } />
+                            : <SignUp onRouteChange={ this.onRouteChange } />
                         )
                 }
             </div>
