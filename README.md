@@ -1,3 +1,5 @@
-# React.JS project with Auth and API (may work slow, because server located at heroku)
+# React.JS project with Auth and API
 
 # https://smartbrain.avidim.dev/
+
+![Screenshot](smartbrain.png)
