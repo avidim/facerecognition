@@ -77,7 +77,7 @@ class App extends React.Component {
 
     onButtonSubmit = () => {
             this.setState({ imageUrl: this.state.input }, () => {
-                fetch('https://salty-fjord-75462.herokuapp.com/imageurl', {
+                fetch('https://smartbrain-api.avidim.dev/imageurl', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ imageUrl: this.state.imageUrl })
@@ -85,7 +85,7 @@ class App extends React.Component {
                     .then(response => response.json())
                     .then(response => {
                         if (response) {
-                            fetch('https://salty-fjord-75462.herokuapp.com/image', {
+                            fetch('https://smartbrain-api.avidim.dev/image', {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ id: this.state.user.id })

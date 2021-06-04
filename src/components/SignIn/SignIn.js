@@ -20,7 +20,7 @@ class SignIn extends React.Component {
     onSubmit = () => {
         if (!this.state.signInEmail || !this.state.signInPassword)
             return alert('Enter email and password!');
-        fetch('https://salty-fjord-75462.herokuapp.com/signin', {
+        fetch('https://smartbrain-api.avidim.dev/signin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
